@@ -289,8 +289,8 @@ between the query and the retrieved documents, as well as the historical perform
 query subspaces to estimate query performance.
 
 In the post-retrieval QPP scenario, our proposed method, QSD-QPPPost, extends the pre-retrieval approach by
-integrating additional layers of contextual and historical information to refine the estimation of query effectiveness
-(see Figure 3). This approach incorporates three core components into an enriched query representation:
+integrating additional layers of contextual and historical information to refine the estimation of query effectiveness.
+This approach incorporates three core components into an enriched query representation:
 (1) Contextualized Query Representation: The individual characteristics of the input query 𝑞 are captured
 through its contextualized embedding representation e(𝑞). This ensures that queries with similar semantic
 subspaces are mapped to proximate regions in the high-dimensional embedding space.
