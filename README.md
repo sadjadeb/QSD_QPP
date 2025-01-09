@@ -281,150 +281,6 @@ In addition, we explore the impact of Querystore size on the performance of NN-Q
 </table>
 </div>
 
-## Usage
-In this section, we provide instructions on how to use the code to predict the performance of a set of target queries.
-
-first, you need to clone the repository:
-
-```
-git clone https://github.com/sadjadeb/QSD_QPP.git
-```
-
-Then, you need to create a virtual environment and install the requirements:
-
-```
-cd QSD_QPP/
-sudo apt-get install virtualenv
-virtualenv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Download the dataset
-You need the MSMARCO dataset to run the code.
-You can download the dataset from [here](https://microsoft.github.io/msmarco/TREC-Deep-Learning-2020) and [here](https://github.com/grill-lab/DL-Hard).
-After downloading the dataset, you need to extract the files and put them in the `data` directory.
-Here is the list of the files you need to put in the `data` directory:
-
-- `collection.tsv`
-
-
-- `queries.train.tsv`
-- `qrels.train.tsv`
-- `top1000.train.tar.gz`
-
-
-- `queries.dev.small.tsv`
-- `qrels.dev.small.tsv`
-- `top1000.dev.tar.gz`
-
-
-- `msmarco-test2019-queries.tsv`
-- `2019qrels-pass.txt`
-- `msmarco-passagetest2019-top1000.tsv`
-
-
-- `msmarco-test2020-queries.tsv`
-- `2020qrels-pass.txt`
-- `msmarco-passagetest2020-top1000.tsv`
-
-
-- `dl_hard-passage.qrels`
-- `topics.tsv (from DL-Hard)`
-- `bm25.run (from DL-Hard)`
-
-### Prepare the data
-
-To create a dictionary which maps each query to its actual performance by BM25 (i.e. MRR@10), you need to run the following command:
-
-```
-python extract_metrics_per_query.py --run /path/to/run/file --qrels /path/to/qrels/file --qrels /path/to/qrels/file
-```
-
-It will create a file named `run-file-name_evaluation-per-query.json` in the `data/eval_per_query` directory.
-
-Then you need to create a file which contains the most similar query from train-set(a.k.a. historical queries with known retrieval effectiveness) to each query. To do so, you need to run the following command:
-```
-python find_most_similar_query.py --base_queries /path/to/train-set/queries --base_queries /path/to/train-set/queries --base_queries /path/to/train-set/queries --target_queries /path/to/desired/queries --target_queries /path/to/desired/queries --target_queries /path/to/desired/queries --model_name /name/of/the/model --model_name /name/of/the/model --model_name /name/of/the/language/model --hits /number/of/hits --hits /number/of/hits --hits /number/of/hits
-```
-
-Finally, to gather all data in a file to make it easier to load the data, you need to run the following commands:
-
-```
-python post/create_train_pkl_file.py
-python post/create_test_pkl_file.py
-```
-
-### Inference by the QSD_QPP<sub>pre</sub> model
-
-##### In order to predict the performance of a set of target queries, you can follow the process below:
-1- First calculate the performance of QueryStore queries using [QueryStorePerformanceCalculator.py](https://github.com/Narabzad/NN-QPP/blob/main/code/QueryStorePerformanceCalculator.py). This code receives a set of queries and calculate their performance (i.e. MAP@1000) through [anserini](https://github.com/castorini/anserini) toolkit.
-```
-python QueryStorePerformanceCalculator.py\
-     -queries path to queries (TSV format) \
-     -anserini path to anserini \
-     -index path collection index \
-     -qrels path to qrels \
-     -nproc number of CPUs \
-     -experiment_dir experiment folder \
-     -queries_chunk_size chunk_size to split queries \
-     -hits number of docs to retrieve for those queries and caluclate performance based on
-```
-MAP@1000 score of MS MARCO queries that were used to build the QueryStore are uploaded as a pickle file named [QueryStore_queries_MAP@1000.pkl](https://github.com/Narabzad/NN-QPP/blob/main/QueryStore_queries_MAP%401000.pkl). <br>
-2- In order to find the most similar queries from the QueryStore and retreived the most similar queries during the inference, we need to first index the QueryStore queries. This can be done using [encode_queries.py]() as below:
-```
-python encode_queries.py\
-     -model model we want to create embeddings with (i.e. sentence-transformers/all-MiniLM-L6-v2) \
-     -queries path to queries we want to index (TSV format) \
-     -output path to output folder 
-```
-3- During inferene, we can find the top_k most similar queries to a set of target queries from the QueryStore using the [find_most_similar_queries.py](https://github.com/Narabzad/NN-QPP/blob/main/code/find_most_similar_queries.py) script as below:
-```
-python find_most_similar_queries.py\
-     -model model we want to create embeddings with for target queries (i.e. sentence-transformers/all-MiniLM-L6-v2) \
-     -faiss_index path the index of QueryStore queries \
-     -target_queries_path path to target_queries \
-     -hits  #number of top-k most similar matched queries to be selected
-```
-4- Finally, having the top-k most similar queries for each of the target queries, we can calculate its performance by calculating the average of performance over retreived queries performance using [query_performance_predictor.py](https://github.com/Narabzad/NN-QPP/blob/main/code/query_performance_predictor.py) as follows:
-```
-python query_performance_predictor.py\
-     -top_matched_queries path to top-k matched queries from QueryStore for target queries \
-     -QueryStore_queries path to QueryStor queries TSV format \
-     -QueryStore_queries_performance #path to the pickle file containing the MAP@1000 of QueryStor queries (QueryStore_queries_MAP@1000.pkl) \
-     -output  path to output
-```
-
-### Train and Test the QSD_QPP<sub>post</sub> model
-
-#### Training
-
-To train the model, you need to run the following command:
-
-```
-python post/train.py
-```
-
-You can change the hyperparameters of the model by changing the values in the lines 9-12 of the `train.py` file.
-
-#### Testing
-
-To test the model, you need to run the following command:
-
-```
-python post/test.py
-```
-
-#### Evaluation
-
-To evaluate the model, you need to run the following command:
-
-```
-python evaluation.py --actual /path/to/actual/performance/file --predicted /path/to/predicted/performance/file --target_metric /target/metric
-```
-
-
-
 ## QSD_QPP<sub>post</sub>
 For this method, the objective is to obtain a more accurate prediction of query performance using 
 additional information from the set of retrieved documents 𝐷𝑞 . The quality and characteristics of these documents
@@ -736,6 +592,150 @@ The below table shows the results of our proposed method (NN-QPP) compared to th
   </tr>
 </tbody>
 </table>
+
+
+## Usage
+In this section, we provide instructions on how to use the code to predict the performance of a set of target queries.
+
+first, you need to clone the repository:
+
+```
+git clone https://github.com/sadjadeb/QSD_QPP.git
+```
+
+Then, you need to create a virtual environment and install the requirements:
+
+```
+cd QSD_QPP/
+sudo apt-get install virtualenv
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Download the dataset
+You need the MSMARCO dataset to run the code.
+You can download the dataset from [here](https://microsoft.github.io/msmarco/TREC-Deep-Learning-2020) and [here](https://github.com/grill-lab/DL-Hard).
+After downloading the dataset, you need to extract the files and put them in the `data` directory.
+Here is the list of the files you need to put in the `data` directory:
+
+- `collection.tsv`
+
+
+- `queries.train.tsv`
+- `qrels.train.tsv`
+- `top1000.train.tar.gz`
+
+
+- `queries.dev.small.tsv`
+- `qrels.dev.small.tsv`
+- `top1000.dev.tar.gz`
+
+
+- `msmarco-test2019-queries.tsv`
+- `2019qrels-pass.txt`
+- `msmarco-passagetest2019-top1000.tsv`
+
+
+- `msmarco-test2020-queries.tsv`
+- `2020qrels-pass.txt`
+- `msmarco-passagetest2020-top1000.tsv`
+
+
+- `dl_hard-passage.qrels`
+- `topics.tsv (from DL-Hard)`
+- `bm25.run (from DL-Hard)`
+
+### Prepare the data
+
+To create a dictionary which maps each query to its actual performance by BM25 (i.e. MRR@10), you need to run the following command:
+
+```
+python extract_metrics_per_query.py --run /path/to/run/file --qrels /path/to/qrels/file --qrels /path/to/qrels/file
+```
+
+It will create a file named `run-file-name_evaluation-per-query.json` in the `data/eval_per_query` directory.
+
+Then you need to create a file which contains the most similar query from train-set(a.k.a. historical queries with known retrieval effectiveness) to each query. To do so, you need to run the following command:
+```
+python find_most_similar_query.py --base_queries /path/to/train-set/queries --base_queries /path/to/train-set/queries --base_queries /path/to/train-set/queries --target_queries /path/to/desired/queries --target_queries /path/to/desired/queries --target_queries /path/to/desired/queries --model_name /name/of/the/model --model_name /name/of/the/model --model_name /name/of/the/language/model --hits /number/of/hits --hits /number/of/hits --hits /number/of/hits
+```
+
+Finally, to gather all data in a file to make it easier to load the data, you need to run the following commands:
+
+```
+python post/create_train_pkl_file.py
+python post/create_test_pkl_file.py
+```
+
+### Inference by the QSD_QPP<sub>pre</sub> model
+
+##### In order to predict the performance of a set of target queries, you can follow the process below:
+1- First calculate the performance of QueryStore queries using [QueryStorePerformanceCalculator.py](https://github.com/Narabzad/NN-QPP/blob/main/code/QueryStorePerformanceCalculator.py). This code receives a set of queries and calculate their performance (i.e. MAP@1000) through [anserini](https://github.com/castorini/anserini) toolkit.
+```
+python QueryStorePerformanceCalculator.py\
+     -queries path to queries (TSV format) \
+     -anserini path to anserini \
+     -index path collection index \
+     -qrels path to qrels \
+     -nproc number of CPUs \
+     -experiment_dir experiment folder \
+     -queries_chunk_size chunk_size to split queries \
+     -hits number of docs to retrieve for those queries and caluclate performance based on
+```
+MAP@1000 score of MS MARCO queries that were used to build the QueryStore are uploaded as a pickle file named [QueryStore_queries_MAP@1000.pkl](https://github.com/Narabzad/NN-QPP/blob/main/QueryStore_queries_MAP%401000.pkl). <br>
+2- In order to find the most similar queries from the QueryStore and retreived the most similar queries during the inference, we need to first index the QueryStore queries. This can be done using [encode_queries.py]() as below:
+```
+python encode_queries.py\
+     -model model we want to create embeddings with (i.e. sentence-transformers/all-MiniLM-L6-v2) \
+     -queries path to queries we want to index (TSV format) \
+     -output path to output folder 
+```
+3- During inferene, we can find the top_k most similar queries to a set of target queries from the QueryStore using the [find_most_similar_queries.py](https://github.com/Narabzad/NN-QPP/blob/main/code/find_most_similar_queries.py) script as below:
+```
+python find_most_similar_queries.py\
+     -model model we want to create embeddings with for target queries (i.e. sentence-transformers/all-MiniLM-L6-v2) \
+     -faiss_index path the index of QueryStore queries \
+     -target_queries_path path to target_queries \
+     -hits  #number of top-k most similar matched queries to be selected
+```
+4- Finally, having the top-k most similar queries for each of the target queries, we can calculate its performance by calculating the average of performance over retreived queries performance using [query_performance_predictor.py](https://github.com/Narabzad/NN-QPP/blob/main/code/query_performance_predictor.py) as follows:
+```
+python query_performance_predictor.py\
+     -top_matched_queries path to top-k matched queries from QueryStore for target queries \
+     -QueryStore_queries path to QueryStor queries TSV format \
+     -QueryStore_queries_performance #path to the pickle file containing the MAP@1000 of QueryStor queries (QueryStore_queries_MAP@1000.pkl) \
+     -output  path to output
+```
+
+### Train and Test the QSD_QPP<sub>post</sub> model
+
+#### Training
+
+To train the model, you need to run the following command:
+
+```
+python post/train.py
+```
+
+You can change the hyperparameters of the model by changing the values in the lines 9-12 of the `train.py` file.
+
+#### Testing
+
+To test the model, you need to run the following command:
+
+```
+python post/test.py
+```
+
+#### Evaluation
+
+To evaluate the model, you need to run the following command:
+
+```
+python evaluation.py --actual /path/to/actual/performance/file --predicted /path/to/predicted/performance/file --target_metric /target/metric
+```
+
 
 ## Citation
 
