@@ -9,12 +9,21 @@ This repository is organized as follows:
 
 
 ## QSD_QPP<sub>pre</sub>
+The pre-retrieval instantiation, QSD-QPP<sub>pre</sub>, dynamically constructs a subspace of historical queries that are in close semantic proximity to the input query within a high-dimensional Query Space. By analyzing embedding distances, it identifies the most similar historical queries and interpolates their known performance scores to estimate the effectiveness of the input query. This approach allows efficient and reliable performance prediction without relying on retrieval results.
+
+The workflow for QSD-QPP<sub>pre</sub> can be described in two primary steps:
+
+1. **Dynamic Subspace Construction**:  
+   The input query is represented as an embedding within the high-dimensional Query Space using a pre-trained language model. Historical queries that fall within a predefined embedding distance threshold (denoted as **γ**) are identified to form a localized subspace. This subspace serves as the basis for performance prediction.
+
+2. **Performance Interpolation**:  
+   The retrieval effectiveness of the input query is estimated by aggregating the known performance metrics of the historical queries in the subspace. A distance-based weighting scheme assigns higher importance to queries that are closer to the input query, ensuring that the prediction is informed by the most relevant historical data. This process enables accurate and efficient performance estimation without requiring retrieval-stage computations.
 
 ![QSD-QPPPre](figures/Pre_framework.png)
 
 
 ### Performance Comparison with Baselines
-The table below shows Pearson Rho, kendall Tau, and Spearman correlation of different baselines as well as our proposed NN-QPP method over four different datasets.
+The table below shows Pearson Rho, kendall Tau, and Spearman correlation of different baselines as well as our proposed QSD_QPP<sub>pre</sub> method over four different datasets.
 
 <table>
 <thead>
@@ -202,12 +211,27 @@ The table below shows Pearson Rho, kendall Tau, and Spearman correlation of diff
     <td>0.093</td>
     <td>0.078</td>
     <td>0.117</td>
-    <td>-0.046</td>
+    <td>0.046</td>
     <td>0.052</td>
     <td>0.038</td>
   </tr>
   <tr>
-    <td>NN-QPP</td>
+    <td>BertPE</td>
+    <td>0.010</td>
+    <td>0.003</td>
+    <td>0.004</td>
+    <td>0.255</td>
+    <td>0.190</td>
+    <td>0.281</td>
+    <td>0.013</td>
+    <td>0.031</td>
+    <td>0.038</td>
+    <td>0.054</td>
+    <td>0.025</td>
+    <td>0.050</td>
+  </tr>
+  <tr>
+    <td>QSD_QPP<sub>pre</sub></td>
     <td>0.219</td>
     <td>0.214</td>
     <td>0.309</td>
@@ -223,63 +247,6 @@ The table below shows Pearson Rho, kendall Tau, and Spearman correlation of diff
   </tr>
 </tbody>
 </table>
-
-### Ablation Study
-The performance of NN-QPP may be impacted by the choice of (1) the base language model that is used for creating the Querystore, (2) the number of nearest neighbor samples that are retrieved per query during inference time, and (3) the size of Querystore used for finding the nearest neighbor samples. As such, we investigate their impact on the overall performance of the model. For this purpose, we adopt three different large language models, namely (1) [all-mpnet-base-v2](https://huggingface.co/sentence-transformers/all-mpnet-base-v2), (2) [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) and (3) [paraphrase-MiniLM-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2) and develop the Querystore independently for each of them and measure the performance of NN-QPP. In addition, we sample queries from the Querystore based on k = {1,3, 5, 7, 9, 10} over all the four datasets. The figures include performance based on Kendall Tau, Pearson Rho, and Spearman correlations.
-<p align="center">
-  <img src="https://github.com/sadjadeb/nearest-neighbour-qpp/blob/master/Pre-QPP-Diagram.jpg">
-</p>
-In addition, we explore the impact of Querystore size on the performance of NN-QPP. To accomplish this, we employed a random sampling approach to select various percentages of queries from the pool of 500k MS MARCO queries. For each subset of queries, we construct distinct versions of the Querystore using the paraphrase-MiniLM-v2 language model. Subsequently, we evaluate the NN-QPP method on the MS MARCO Dev query dataset, utilizing the top-10 nearest neighbors sampled from each Querystore. The outcomes of these evaluations are presented in the Table below.
-<div align="center">
-<table>
-<thead>
-  <tr>
-    <th>Percentage of Queries </th>
-    <th>Pearson</th>
-    <th>Kendall</th>
-    <th>Spearman</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td>50%</td>
-    <td>0.200</td>
-    <td>0.191</td>
-    <td>0.278</td>
-  </tr>
-  <tr>
-    <td>60%</td>
-    <td>0.200</td>
-    <td>0.197</td>
-    <td>0.286</td>
-  </tr>
-  <tr>
-    <td>70%</td>
-    <td>0.196</td>
-    <td>0.199</td>
-    <td>0.290</td>
-  </tr>
-  <tr>
-    <td>80%</td>
-    <td>0.216</td>
-    <td>0.209</td>
-    <td>0.302</td>
-  </tr>
-  <tr>
-    <td>90%</td>
-    <td>0.215</td>
-    <td>0.207</td>
-    <td>0.299</td>
-  </tr>
-  <tr>
-    <td>100%</td>
-    <td>0.219</td>
-    <td>0.214</td>
-    <td>0.309</td>
-  </tr>
-</tbody>
-</table>
-</div>
 
 ## QSD_QPP<sub>post</sub>
 For this method, the objective is to obtain a more accurate prediction of query performance using 
@@ -307,7 +274,7 @@ known effectiveness scores 𝑀𝑞𝑖 contribute significantly to the predicti
 
 ### Results
 
-The below table shows the results of our proposed method (NN-QPP) compared to the baselines over four datasets.
+The below table shows the results of our proposed QSD_QPP<sub>post</sub> method compared to the baselines over four datasets.
 
 <table>
 <thead>
@@ -573,7 +540,7 @@ The below table shows the results of our proposed method (NN-QPP) compared to th
     <td>0.015</td>
   </tr>
   <tr>
-    <td>Ours (NN-QPP)</td>
+    <td>QSD_QPP<sub>post</sub></td>
     <td><strong>0.555</strong></td>
     <td><strong>0.421</strong></td>
     <td><strong>0.544</strong></td>
@@ -592,6 +559,7 @@ The below table shows the results of our proposed method (NN-QPP) compared to th
   </tr>
 </tbody>
 </table>
+
 
 
 ## Usage
@@ -671,9 +639,9 @@ python post/create_test_pkl_file.py
 ### Inference by the QSD_QPP<sub>pre</sub> model
 
 ##### In order to predict the performance of a set of target queries, you can follow the process below:
-1- First calculate the performance of QueryStore queries using [QueryStorePerformanceCalculator.py](https://github.com/Narabzad/NN-QPP/blob/main/code/QueryStorePerformanceCalculator.py). This code receives a set of queries and calculate their performance (i.e. MAP@1000) through [anserini](https://github.com/castorini/anserini) toolkit.
+1- First calculate the performance of QuerySpace queries using [QuerySpacePerformanceCalculator.py](https://github.com/sadjadeb/QSD_QPP/blob/main/QuerySpacePerformanceCalculator.py). This code receives a set of queries and calculate their performance (i.e. NDCG@10) through [anserini](https://github.com/castorini/anserini) toolkit.
 ```
-python QueryStorePerformanceCalculator.py\
+python QuerySpacePerformanceCalculator.py\
      -queries path to queries (TSV format) \
      -anserini path to anserini \
      -index path collection index \
@@ -683,28 +651,27 @@ python QueryStorePerformanceCalculator.py\
      -queries_chunk_size chunk_size to split queries \
      -hits number of docs to retrieve for those queries and caluclate performance based on
 ```
-MAP@1000 score of MS MARCO queries that were used to build the QueryStore are uploaded as a pickle file named [QueryStore_queries_MAP@1000.pkl](https://github.com/Narabzad/NN-QPP/blob/main/QueryStore_queries_MAP%401000.pkl). <br>
-2- In order to find the most similar queries from the QueryStore and retreived the most similar queries during the inference, we need to first index the QueryStore queries. This can be done using [encode_queries.py]() as below:
+2- In order to find the most similar queries from the QuerySpace and retreived the most similar queries during the inference, we need to first index the QuerySpace queries. This can be done using [encode_queries.py](https://github.com/sadjadeb/QSD_QPP/blob/main/encode_queries.py) as below:
 ```
 python encode_queries.py\
      -model model we want to create embeddings with (i.e. sentence-transformers/all-MiniLM-L6-v2) \
      -queries path to queries we want to index (TSV format) \
      -output path to output folder 
 ```
-3- During inferene, we can find the top_k most similar queries to a set of target queries from the QueryStore using the [find_most_similar_queries.py](https://github.com/Narabzad/NN-QPP/blob/main/code/find_most_similar_queries.py) script as below:
+3- During inferene, we can find the top_k most similar queries to a set of target queries from the QuerySpace using the [find_most_similar_query.py](https://github.com/sadjadeb/QSD_QPP/blob/main/find_most_similar_query.py) script as below:
 ```
-python find_most_similar_queries.py\
+python find_most_similar_query.py\
      -model model we want to create embeddings with for target queries (i.e. sentence-transformers/all-MiniLM-L6-v2) \
-     -faiss_index path the index of QueryStore queries \
+     -faiss_index path the index of QuerySpace queries \
      -target_queries_path path to target_queries \
      -hits  #number of top-k most similar matched queries to be selected
 ```
-4- Finally, having the top-k most similar queries for each of the target queries, we can calculate its performance by calculating the average of performance over retreived queries performance using [query_performance_predictor.py](https://github.com/Narabzad/NN-QPP/blob/main/code/query_performance_predictor.py) as follows:
+4- Finally, having the top-k queries wihtin the subspace for each of the target queries, we can calculate its performance by calculating the average of performance over the subspace queries performance using [inference.py](https://github.com/sadjadeb/QSD_QPP/blob/main/pre/inference.py) as follows:
 ```
-python query_performance_predictor.py\
-     -top_matched_queries path to top-k matched queries from QueryStore for target queries \
-     -QueryStore_queries path to QueryStor queries TSV format \
-     -QueryStore_queries_performance #path to the pickle file containing the MAP@1000 of QueryStor queries (QueryStore_queries_MAP@1000.pkl) \
+python inference.py\
+     -top_matched_queries path to top-k matched queries from QuerySpace for target queries \
+     -QuerySpace_queries path to QueryStor queries TSV format \
+     -QuerySpace_queries_performance #path to the pickle file containing the retreival effectiveness of QuerySpace queries \
      -output  path to output
 ```
 
