@@ -40,8 +40,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--top_matched_queries', type=str) #path to top matched queries for target queries
-    parser.add_argument('--QueryStore_queries', type=str) #path to QueryStor queries TSV format
-    parser.add_argument('--QueryStore_queries_performance', type=str) #path to the pickle file containing the MAP@1000 of QueryStor queries
+    parser.add_argument('--QuerySpace_queries', type=str) #path to QueryStor queries TSV format
+    parser.add_argument('--QuerySpace_queries_performance', type=str) #path to the pickle file containing the MAP@1000 of QueryStor queries
     parser.add_argument('--output', type=str) #path to output
     args = parser.parse_args()
 
